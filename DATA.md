@@ -7,11 +7,12 @@
 - **File name:** `WA_Fn-UseC_-Telco-Customer-Churn.csv`
 - **Shape:** 7,043 rows, 21 columns
 
+The data itself is not stored in this repository (see `.gitignore`).
+
 ## How to obtain it
 
-Run `make download-data` (wraps `src/download_data.py`, which uses the official
-Kaggle API) or download the CSV manually from the link above and place it in
-`data/raw/`.
+Run `python src/download_data.py` (uses the official Kaggle API) or download the CSV
+manually from the link above and place it in `data/raw/`.
 
 ## Columns
 
