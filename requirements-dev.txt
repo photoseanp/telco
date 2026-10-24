@@ -1,2 +1,4 @@
 ruff
 ty
+jupyter
+matplotlib>=3.10
