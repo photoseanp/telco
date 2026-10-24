@@ -52,8 +52,8 @@ cd telco
 git checkout dev
 
 # 2. Create and activate a virtual environment
-python3 -m venv .venv
-source .venv/bin/activate        # Windows: .venv\Scripts\activate
+python3 -m venv .telco
+source .telco/bin/activate        # Windows: .venv\Scripts\activate
 
 # 3. Install dependencies from requirements.txt
 pip install -r requirements.txt
@@ -74,6 +74,9 @@ python src/data_loader.py     # prints the first 10 rows of the dataset
 |-- DATA.md
 |-- requirements.txt
 |-- .gitignore
+|-- scripts/
+|   |--read_api.py
+|   |--README.md
 |-- src/
 |   |-- main.py            # loads and summarizes the dataset
 |   |-- data_loader.py     # prints the first 10 rows
