@@ -2,5 +2,3 @@ ruff
 ty
 jupyter
 matplotlib>=3.10
-plotly>=6.1.1
-kaleido>=1.0
