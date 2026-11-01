@@ -7,7 +7,10 @@ import polars as pl
 RAW_PATH = Path("data/raw/WA_Fn-UseC_-Telco-Customer-Churn.csv")
 PARQUET_PATH = Path("data/processed/telco_churn.parquet")
 
-BOOL_COLS = ["Partner", "Dependents", "PhoneService", "PaperlessBilling", "Churn"]
+BOOL_COLS = [
+    "SeniorCitizen", "Partner", "Dependents", "PhoneService",
+    "PaperlessBilling", "Churn",
+]
 CATEGORICAL_COLS = [
     "gender", "MultipleLines", "InternetService", "OnlineSecurity",
     "OnlineBackup", "DeviceProtection", "TechSupport", "StreamingTV",
@@ -34,15 +37,18 @@ def load_and_preview(path: Path = RAW_PATH, n: int = 10) -> pl.DataFrame:
 def cast_types(df: pl.DataFrame) -> pl.DataFrame:
     """Return a DataFrame with proper dtypes."""
     return df.with_columns(
-        # TotalCharges holds blank strings for new customers -> null
+        # Blank TotalCharges (customers with tenure 0) -> null -> 0.0:
+        # these customers have not been billed yet.
         pl.col("TotalCharges")
         .cast(pl.String)
         .str.strip_chars()
-        .cast(pl.Float64, strict=False),
-        pl.col("SeniorCitizen").cast(pl.Boolean),
+        .cast(pl.Float64, strict=False)
+        .fill_null(0.0),
         pl.col("tenure").cast(pl.Int32),
         pl.col("MonthlyCharges").cast(pl.Float64),
-        *[(pl.col(c) == "Yes").alias(c) for c in BOOL_COLS],
+        # SeniorCitizen is 0/1, the other flags are Yes/No
+        (pl.col("SeniorCitizen") == 1).alias("SeniorCitizen"),
+        *[(pl.col(c) == "Yes").alias(c) for c in BOOL_COLS if c != "SeniorCitizen"],
         *[pl.col(c).cast(pl.Categorical) for c in CATEGORICAL_COLS],
     )
 
@@ -56,6 +62,8 @@ def save_parquet(df: pl.DataFrame, path: Path = PARQUET_PATH) -> None:
 if __name__ == "__main__":
     raw = load_and_preview()
     typed = cast_types(raw)
+    print(f"TotalCharges nulls in raw data: {raw['TotalCharges'].null_count()}")
+    print(f"TotalCharges nulls after cast: {typed['TotalCharges'].null_count()}")
     print(typed.schema)
     save_parquet(typed)
     print(f"Saved to {PARQUET_PATH}")
