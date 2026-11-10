@@ -115,9 +115,9 @@ Variables: `DB_DRIVER`, `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASSWORD
 3. Run the script:
 
 ```bash
-python scripts/write_to_db.py                       # uses .env
-python scripts/write_to_db.py --env-file .env.test  # another env file
-python scripts/write_to_db.py --if-exists replace   # recreate the table
+python scripts/write_to_db.py                          # uses .env
+python scripts/write_to_db.py --env-file .env.student  # another env file
+python scripts/write_to_db.py --if-exists replace      # recreate the table
 ```
 
 By default the script fails if the table already exists. On success it prints the number of rows stored in the table
