@@ -10,7 +10,9 @@ DATA_PATH = Path("data/raw/WA_Fn-UseC_-Telco-Customer-Churn.csv")
 def load_data(path: Path = DATA_PATH) -> pl.DataFrame:
     """Load the dataset into a Polars DataFrame."""
     if not path.exists():
-        raise FileNotFoundError(f"{path} not found. Run `python src/download_data.py` first.")
+        raise FileNotFoundError(
+            f"{path} not found. Run `python src/download_data.py` first."
+        )
     return pl.read_csv(path)
 
 

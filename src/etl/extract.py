@@ -25,6 +25,8 @@ def extract(path: Path = RAW_FILE, force_download: bool = False) -> pl.DataFrame
     """Return the raw dataset; download it first if the file is missing."""
     if force_download or not path.exists():
         download(path.parent)
-    df = pl.read_csv(path, infer_schema_length=0)  # all columns as strings: types are cast in transform
+    df = pl.read_csv(
+        path, infer_schema_length=0
+    )  # all columns as strings: types are cast in transform
     log.info("Extracted %d rows x %d columns from %s", df.height, df.width, path)
     return df

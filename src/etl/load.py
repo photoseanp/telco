@@ -2,18 +2,37 @@
 
 import logging
 import os
+import re
 from pathlib import Path
 
 import polars as pl
 from dotenv import load_dotenv
 from sqlalchemy import (
-    Boolean, Column, Float, Integer, MetaData, String, Table, create_engine, inspect, text,
+    Boolean,
+    Column,
+    Float,
+    Integer,
+    MetaData,
+    String,
+    Table,
+    create_engine,
+    func,
+    inspect,
+    select,
 )
 from sqlalchemy.engine import URL, Engine
 
 from etl.config import MAX_ROWS, PROCESSED_FILE, SEED
 
 log = logging.getLogger(__name__)
+
+_IDENTIFIER = re.compile(r"^[a-z_][a-z0-9_]*$")
+
+
+def check_table_name(name: str) -> None:
+    """Allow only lowercase latin identifiers as table names."""
+    if not _IDENTIFIER.fullmatch(name):
+        raise ValueError("Table name must match ^[a-z_][a-z0-9_]*$")
 
 
 def save_parquet(df: pl.DataFrame, path: Path = PROCESSED_FILE) -> Path:
@@ -24,7 +43,7 @@ def save_parquet(df: pl.DataFrame, path: Path = PROCESSED_FILE) -> Path:
 
 
 def make_engine(env_file: str | None = None) -> Engine:
-    """Build an engine from DB_* environment variables (credentials are never logged)."""
+    """Build an engine from DB_* environment variables (never logged)."""
     if env_file:
         load_dotenv(env_file, override=True)
     names = ["DB_HOST", "DB_PORT", "DB_NAME", "DB_USER", "DB_PASSWORD"]
@@ -60,20 +79,27 @@ def load(
     if_exists: str = "fail",
 ) -> int:
     """Write at most `max_rows` random rows to `table_name`; return rows stored."""
+    check_table_name(table_name)
     max_rows = min(max_rows, MAX_ROWS)
     sample = df.sample(n=min(max_rows, df.height), seed=SEED)
     sample = sample.with_columns(pl.col(pl.Categorical).cast(pl.String))
 
     meta = MetaData()
-    table = Table(table_name, meta, *[Column(c, _sql_type(t)) for c, t in sample.schema.items()])
+    table = Table(
+        table_name,
+        meta,
+        *[Column(c, _sql_type(t)) for c, t in sample.schema.items()],
+    )
 
     with engine.begin() as conn:
         if inspect(conn).has_table(table_name):
             if if_exists == "fail":
-                raise RuntimeError(f"Table '{table_name}' already exists (use --if-exists replace)")
-            conn.execute(text(f'DROP TABLE "{table_name}"'))
+                raise RuntimeError(
+                    f"Table '{table_name}' already exists (use --if-exists replace)"
+                )
+            table.drop(conn)
         table.create(conn)
         conn.execute(table.insert(), sample.to_dicts())
-        count = conn.execute(text(f'SELECT COUNT(*) FROM "{table_name}"')).scalar_one()
+        count = conn.execute(select(func.count()).select_from(table)).scalar_one()
     log.info("Table '%s' contains %d rows", table_name, count)
     return count

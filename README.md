@@ -37,7 +37,7 @@ Requires Python 3.11+ and `pip`.
 # 1. Clone the repository and switch to the dev branch
 git clone https://github.com/photoseanp/telco.git
 cd telco
-git checkout dev
+git checkout main
 
 # 2. Create and activate a virtual environment
 python3 -m venv .venv
@@ -96,35 +96,31 @@ Key results:
 - Churn is highest for month-to-month contracts, fiber optic internet, electronic check payments and short tenure.
 - `TotalCharges` is derived from `tenure x MonthlyCharges` (correlation with `tenure` is 0.83).
 
-### Writing to the remote database
+### ETL pipeline
 
-`scripts/write_to_db.py` writes a reproducible sample of 100 rows (`seed=42`) of the processed dataset to a table in a
-remote database.
+`src/etl` is a self-contained package: raw dataset -> cleaning and typing -> validation -> up to 100 rows in a database.
 
-1. Prepare the processed dataset (see "Data loader").
-2. Create an env file from the template and fill in the connection settings:
+| File | Role |
+|------|------|
+| `__init__.py` | Public API: `extract`, `transform`, `validate`, `load` |
+| `config.py` | Paths, Kaggle dataset id, `MAX_ROWS = 100`, sampling seed |
+| `extract.py` | Downloads the CSV from Kaggle if missing and reads it |
+| `transform.py` | Strips strings, fills blank `TotalCharges` with 0.0, casts types |
+| `validate.py` | Checks columns, duplicates, nulls, invalid values; raises `ValidationError` |
+| `load.py` | Saves parquet, builds the DB engine from `DB_*`, writes the sample (seed 42) |
+| `main.py` | CLI entry point |
 
-```bash
-cp .env.example .env
-```
-
-Variables: `DB_DRIVER`, `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASSWORD`, `TABLE_NAME`.
-`TABLE_NAME` is the surname and initials in lowercase latin letters. If the database is not PostgreSQL, change
-`DB_DRIVER` (for example `mysql+pymysql`) and install the matching driver.
-
-3. Run the script:
+Setup and run:
 
 ```bash
-python scripts/write_to_db.py                          # uses .env
-python scripts/write_to_db.py --env-file .env.student  # another env file
-python scripts/write_to_db.py --if-exists replace      # recreate the table
+cp .env.example .env     # fill in DB_*; never commit .env
+PYTHONPATH=src python -m etl.main --table <surname_initials> --env-file .env
 ```
 
-By default the script fails if the table already exists. On success it prints the number of rows stored in the table
-(expected: 100).
+Arguments: `--table` (required, lowercase latin), `--env-file`, `--rows` (1-100), `--if-exists {fail,replace}`, `--input`, `--force-download`, `--dry-run`.
+Check without a database: `PYTHONPATH=src python -m etl.main --table x --dry-run`.
 
-The `.env*` files and database files are git-ignored. Credentials must never be committed, printed or hardcoded.
-
+Runtime dependencies are in `requirements.txt`; notebook, plotting and lint tools are in `requirements-dev.txt`.
 ## ETL package
 
 `src/etl` is a self-contained pipeline: raw dataset -> cleaning and typing -> validation -> up to 100 rows in a database.
@@ -183,9 +179,16 @@ Ruff settings are defined in `pyproject.toml`.
 |   |-- EDA.ipynb              # exploratory data analysis
 |-- scripts/
 |   |-- read_api.py            # builds a dataset from the Open-Meteo API
-|   |-- write_to_db.py         # writes 100 dataset rows to a remote database
 |   |-- README.md              # description of the API dataset
 |-- src/
+|   |-- etl/
+|   |   |-- __init__.py
+|   |   |-- config.py
+|   |   |-- extract.py
+|   |   |-- transform.py
+|   |   |-- validate.py
+|   |   |-- load.py
+|   |   |-- main.py
 |   |-- download_data.py       # downloads the dataset from Kaggle
 |   |-- data_loader.py         # loading, type casting, parquet export
 |   |-- main.py                # short dataset summary

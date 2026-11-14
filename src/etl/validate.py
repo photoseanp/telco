@@ -7,8 +7,14 @@ import polars as pl
 log = logging.getLogger(__name__)
 
 REQUIRED_COLUMNS = {
-    "customerID", "gender", "SeniorCitizen", "tenure", "MonthlyCharges",
-    "TotalCharges", "Contract", "Churn",
+    "customerID",
+    "gender",
+    "SeniorCitizen",
+    "tenure",
+    "MonthlyCharges",
+    "TotalCharges",
+    "Contract",
+    "Churn",
 }
 
 

@@ -35,3 +35,7 @@ data/processed/*
 target/
 Cargo.toml
 Cargo.lock
+*.parquet
+.env.*
+!.env.example
+
