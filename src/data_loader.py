@@ -39,7 +39,7 @@ def cast_types(df: pl.DataFrame) -> pl.DataFrame:
         .cast(pl.String)
         .str.strip_chars()
         .cast(pl.Float64, strict=False)
-	.fill_null(0.0),
+       	.fill_null(0.0),
         pl.col("SeniorCitizen").cast(pl.Boolean),
         pl.col("tenure").cast(pl.Int32),
         pl.col("MonthlyCharges").cast(pl.Float64),
