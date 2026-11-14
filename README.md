@@ -125,6 +125,39 @@ By default the script fails if the table already exists. On success it prints th
 
 The `.env*` files and database files are git-ignored. Credentials must never be committed, printed or hardcoded.
 
+## ETL package
+
+`src/etl` is a self-contained pipeline: raw dataset -> cleaning and typing -> validation -> up to 100 rows in a database.
+
+| File | Role |
+|------|------|
+| `__init__.py` | Public API: `extract`, `transform`, `validate`, `load` |
+| `config.py` | Paths, Kaggle dataset id, `MAX_ROWS = 100`, sampling seed |
+| `extract.py` | Downloads the CSV from Kaggle if missing and reads it (all columns as strings) |
+| `transform.py` | Strips strings, fills blank `TotalCharges` with 0.0, casts to Boolean/Int32/Float64/Categorical |
+| `validate.py` | Checks required columns, duplicate `customerID`, nulls, negative or non-positive values; raises `ValidationError` |
+| `load.py` | Saves parquet, builds the DB engine from `DB_*` variables, writes a sample (max 100 rows, `seed=42`) |
+| `main.py` | CLI entry point |
+
+### Run
+
+```bash
+cp .env.example .env          # fill in DB_* values, never commit .env
+PYTHONPATH=src python -m etl.main --table berendeyaa --env-file .env.homework
+```
+
+Arguments: `--table` (required), `--env-file`, `--rows` (1-100), `--if-exists {fail,replace}`, `--input`, `--force-download`, `--dry-run` (skip the database).
+
+Check without a database:
+
+```bash
+PYTHONPATH=src python -m etl.main --table x --dry-run
+```
+
+### Dependencies
+
+`requirements.txt` holds runtime packages only (polars, kaggle, sqlalchemy, python-dotenv, psycopg2-binary). `requirements-dev.txt` includes it and adds notebook, plotting, linting and testing tools.
+
 ### Code quality
 
 ```bash
